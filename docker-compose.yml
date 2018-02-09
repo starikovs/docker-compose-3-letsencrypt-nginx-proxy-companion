@@ -1,0 +1,51 @@
+version: '3.2'
+services:
+  myapp:
+    image: slavicstar/myapp
+    container_name: myapp
+    build: .
+    ports:
+      - "3000"
+    environment:
+      - NODE_ENV=development
+      - VIRTUAL_HOST=spage.website
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=spage.website
+      - LETSENCRYPT_EMAIL=slavicstar@gmail.com
+    volumes:
+      - type: bind
+        source: ./
+        target: /usr/src/app
+        read_only: true
+    command: nodemon /usr/src/app/bin/www
+    restart: always
+  jwildernginxproxy:
+    image: jwilder/nginx-proxy
+    container_name: jwildernginxproxy
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/nginx/certs:ro
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    restart: always
+  letsencrypt-nginx-proxy-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt-nginx-proxy-companion
+    environment:
+      - NGINX_PROXY_CONTAINER=jwildernginxproxy
+    volumes:
+      - certs:/etc/nginx/certs
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
+volumes: 
+  certs:
+  html:
+  vhostd:
+  
